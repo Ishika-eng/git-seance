@@ -1,5 +1,5 @@
 ---
-title: Git Séance: raising a repo's deleted files and asking what still haunts it
+title: Git Séance: the deleted files that still haunt your repo
 published: false
 tags: devchallenge, hf26challenge
 ---
@@ -8,53 +8,11 @@ tags: devchallenge, hf26challenge
 
 ## What I Built
 
-Every repository has a graveyard: the files someone deleted. `git log` knows who wrote each one, when it was born, when it died and what the commit message said at the funeral. Nobody ever reads it.
+Every repository has a graveyard: the files someone deleted. `git log` knows who wrote each one, when it died, and what the commit message said at the funeral. Nobody reads it.
 
-Git Séance digs it up. It finds a repo's deleted files and gives each a tombstone made only of git facts. A local open-weight model then lets the file speak, and you can question it. The part I like best is what it does beyond the voice:
+Git Séance does. It digs up a repo's deleted files, gives each a tombstone made only of git facts, and lets a local open-weight model speak for it. The spooky part turned out to be useful, because deleted files are not always gone. Something still points at them.
 
-- **Last rites.** The one I would actually keep installed. `git seance --install-hook` adds a pre-commit hook. When you stage a deletion, it tells you which living files still mention the one you are about to kill, before the broken delete lands. `--eulogy` lets the file say goodbye.
-- **Successors.** For each dead file it finds what replaced it: a git rename, or the file added in the same commit whose lines overlap most, shown as a percentage.
-- **Zombies.** Files that died and came back, and how many times.
-- **Hauntings.** It searches the living code for lines that still mention a dead file, such as an import of a module that no longer exists. Deleted files are not always gone.
-- **Reincarnations.** If a "deleted" file was only renamed (`useWebSocket.js` became `.jsx`), it says so instead of pretending it died.
-- **The coroner's report.** Who deleted the most, the commit that was a mass grave, the average lifespan.
-- **`--talk`.** A séance. Ask a deleted file why it died. It only knows its own code and history, and says "I do not remember" when you ask anything else.
-- **`--raise`.** Restores the file's last living version into a folder. Your repo is untouched.
-- **`--html`.** A self-contained graveyard page with moonlight, fog, clickable tombstones and a birth-to-death chart of every ghost. No network, no scripts.
-- **A real git command.** `pip install git+https://github.com/Ishika-eng/git-seance` gives you `git seance`.
-
-I took the theme two ways at once: the spooky one (a file speaking from beyond `git rm`, still haunting its old imports) and the Día de los Muertos one (honoring work that existed, mattered for a while, and was set down on purpose).
-
-Here is the coroner's report and one tombstone from my own college project:
-
-```
-THE CORONER'S REPORT
-13 souls lie here, living 17 days on average.
-Longest life: app/frontend/src/pages/Demo.jsx (18 days).
-Hands that deleted the most: Ishika (13)
-Worst night: commit cb3fbaa3 took 9 files at once: "Central config and real sentence embeddings for ATMC"
-
-╭─────────────────────────────────────╮
-│             R . I . P .             │
-│      pilot/run_poison_pilot.py      │
-│       2026-09-22 - 2026-10-10       │
-│       lived 18 days, 157 lines      │
-│               "main()"              │
-│  cause of death: collateral damage  │
-╰─────────────────────────────────────╯
-```
-
-And a séance with that file, where the last answer is the one I was checking for:
-
-```
-you > why were you deleted?
-run_poison_pilot.py > I was deleted because the project's goals shifted, and the team decided to
-incorporate a self-evolving coding assistant loop, evaluation harness, and Assistant UI. [...]
-you > what is the capital of France?
-run_poison_pilot.py > I do not remember.
-```
-
-And the hook, in a real `git commit` in a small repo I made to test it:
+This is the feature I'd keep installed. `git seance --install-hook` adds a pre-commit hook. Stage a deletion and commit, and it checks what still mentions the file. This is a real `git commit` in a small repo I made to test it:
 
 ```
 $ git rm billing/invoice_formatter.py
@@ -67,17 +25,51 @@ $ git commit -m "Remove the old invoice formatter"
     main.py:1  from billing.invoice_formatter import format_invoice
 ```
 
-That `main.py` line is a broken import the commit would have shipped. The full transcript, with the file's eulogy, is in [`examples/last-rites.txt`](https://github.com/Ishika-eng/git-seance/blob/main/examples/last-rites.txt).
+That `main.py` line is a broken import the commit would have shipped. Add `--eulogy` and the file says goodbye in its own voice ([full transcript](https://github.com/Ishika-eng/git-seance/blob/main/examples/last-rites.txt)). The hook only warns unless you add `--strict`.
+
+Run it over a repo's whole history and you get a graveyard:
+
+- **Tombstones and a coroner's report**: who deleted the most, the commit that was a mass grave, the average lifespan, and the files that died and came back ("zombies").
+- **Successors**: what replaced each dead file, as a git rename or the file added in the same commit that overlaps most, with the percentage shown.
+- **Hauntings and reincarnations**: living code that still mentions a dead file, and files that were only renamed (`useWebSocket.js` became `.jsx`), which it reports as alive.
+- **A séance** (`--talk`): ask a deleted file questions. It knows only its own code and history, and says "I do not remember" otherwise.
+- **`--raise`** restores a file's last version into a folder, and **`--html`** writes a self-contained graveyard page.
+
+I read the theme two ways at once: the spooky one (a file speaking from beyond `git rm`, still haunting its old imports) and the Día de los Muertos one (honoring work that existed, mattered for a while, and was set down on purpose).
+
+Here is a tombstone from my own college project, and a séance with that file:
+
+```
+╭─────────────────────────────────────╮
+│             R . I . P .             │
+│      pilot/run_poison_pilot.py      │
+│       2026-09-22 - 2026-10-10       │
+│       lived 18 days, 157 lines      │
+│               "main()"              │
+│  cause of death: collateral damage  │
+╰─────────────────────────────────────╯
+
+you > why were you deleted?
+run_poison_pilot.py > I was deleted because the project's goals shifted, and the team decided to
+incorporate a self-evolving coding assistant loop, evaluation harness, and Assistant UI. [...]
+you > what is the capital of France?
+run_poison_pilot.py > I do not remember.
+```
 
 ## Demo
 
-Git Séance is a command line tool, so there is nothing deployed. This is the graveyard page it generated for my college project, with one tombstone opened:
+Git Séance is a command line tool, so nothing is deployed. This is the graveyard page it generated for my college project, with one tombstone opened:
 
 ![The graveyard page, one tombstone opened](https://raw.githubusercontent.com/Ishika-eng/git-seance/main/examples/graveyard.jpg)
 
-The full run (graveyard page, ofrenda and raw terminal output) is in [`examples/`](https://github.com/Ishika-eng/git-seance/tree/main/examples). To try it on your own repo: `python3 seance.py /path/to/repo --html graveyard.html`.
+The full run is in [`examples/`](https://github.com/Ishika-eng/git-seance/tree/main/examples). Try it on your own repo:
 
-<!-- TODO (optional): a short screen recording of the terminal run and `--talk` would make this stronger. -->
+```bash
+pip install git+https://github.com/Ishika-eng/git-seance
+git seance --html graveyard.html     # run inside any git repo
+```
+
+<!-- TODO (optional): a short screen recording of the hook and `--talk` would make this stronger. -->
 
 ## Code
 
@@ -85,23 +77,20 @@ The full run (graveyard page, ofrenda and raw terminal output) is in [`examples/
 
 ## How I Built It
 
-- **Git does the remembering.** `git log --diff-filter=D` lists deletions. `git show <commit>^:<path>` recovers the last version, and `git log --diff-filter=A --follow` finds the birth. Lifespan, line count, last words and the coroner's numbers are computed, never generated. `git grep` on HEAD finds the hauntings, and `git ls-files` spots the reincarnations.
-- **An open-weight model does the speaking.** Qwen2.5-Coder 7B Instruct (Apache 2.0) runs through Ollama at `localhost:11434`. The tool streams tokens from it using Python's standard library, so the ghost speaks as the model writes. There are no dependencies to install.
-- **The model is fenced in.** The system prompt says to use only the facts and code given, never invent names, dates or reasons, and to admit when it does not know. Facts and voice are always shown separately, so you can see which part is git and which part is the model.
-- **Tested without a model.** Thirty-three unit tests build throwaway git repos and check the facts, hauntings, reincarnation, successors, zombies, the coroner, last rites (including a real `git commit` with the hook installed, and refusing to overwrite someone else's hook), `--raise` (including refusing paths that escape its folder), `--talk` with a mocked model, the lifespan chart, and HTML escaping.
-- **The hook is polite.** It only warns unless you add `--strict`, and `--install-hook` refuses to overwrite a pre-commit hook it did not write.
+- **Git does the remembering.** Deletions, births, lifespans, last lines and the coroner's numbers come from `git log`, `git show` and `git ls-files`. Hauntings come from `git grep`, and the hook searches the staged index with `git grep --cached`. None of it is generated.
+- **An open-weight model does the speaking.** Qwen2.5-Coder 7B Instruct (Apache 2.0) runs through Ollama on localhost, streamed with Python's standard library. There are no dependencies to install.
+- **The model is fenced in.** The prompt says to use only the facts and code given, never to invent names, dates or reasons, and to admit when it does not know. Facts and voice are always shown separately.
+- **Tested without a model.** 33 unit tests build throwaway git repos. They include a real `git commit` with the hook installed, refusing to overwrite someone else's hook, and refusing `--raise` paths that escape their folder.
 
-Two things went wrong while building it, and fixing them made it better:
-- My cause-of-death guesser labelled "Remove the legacy script" as a *refactor*, because `move` matches inside `Remove`. A unit test caught it. Keywords now match only at the start of a word.
-- My first version of hauntings was noisy. Running it on my other repos, a deleted `server/Dockerfile` got blamed for every mention of the live root `Dockerfile`, and a rename from `.js` to `.jsx` looked like a broken import. Now the bare name only counts if it is distinctive and no living file shares it, and renames are reported as reincarnations. Both cases have tests.
+Two bugs made it better. My cause-of-death guesser labelled "Remove the legacy script" a *refactor*, because `move` matches inside `Remove`; a test caught it. And my first hauntings were noisy: running them on my other repos, a deleted `server/Dockerfile` was blamed for every mention of the live root `Dockerfile`, and a `.js` to `.jsx` rename looked like a broken import. Now a bare name only counts if it is distinctive and no living file shares it, and renames are reported as reincarnations.
 
-Honest notes on quality: the model is a 7B. It often admits "the reason is not recorded", but in the séance above it invented a reason ("the project's goals shifted") from a commit message that did not say that. That is why the git facts sit above every whisper. The broken import in the hook demo above comes from a small repo I built to test it, not from one of my real projects. On my real repos, hauntings mostly taught me what to filter out (shared names, renames), and successors found real moves: `useWebSocket.js` replaced by `.jsx` at 100%, and result files moved into a subfolder. Successor percentages under about 60% are a loose "looks somewhat similar" and I show the percentage so you can judge.
+**Where it falls short.** The model is a 7B. It often admits "the reason is not recorded", but in the séance above it invented a reason from a commit message that did not say that, which is why the git facts sit above every whisper. The broken import in the hook demo is from a repo I built to test it, not one of my real projects. On my real repos, hauntings mostly taught me what to filter out, while successors found real moves: `useWebSocket.js` replaced by `.jsx` at 100%, and result files moved into a subfolder. Successor matches under about 60% are loose guesses, so I show the percentage.
 
 ## Why Does Open Innovation Matter?
 
-The files people delete are often the ones they would least like to paste into a hosted API: abandoned experiments, old client code, things with a bad commit message. Because the model runs on my machine, a repository's entire history can be read, questioned and turned into a graveyard page without any of it going anywhere. The only network call is to localhost, the HTML page loads nothing, and it works with the Wi-Fi off.
+The files people delete are often the ones they would least like to paste into a hosted API: abandoned experiments, old client code, things with a bad commit message. Because the model runs on my machine, a repository's whole history can be read, questioned and turned into a graveyard page without any of it leaving. The only network call is to localhost, and the HTML page loads nothing from the network.
 
-It is also a setting, not a dependency: `--model` takes any model Ollama can run. I did not benchmark closed models against this, so I will not claim it beats them. For this job, private and free to run was what mattered, and an open-weight 7B was enough.
+The model is also a setting, not a dependency: `--model` takes anything Ollama can run, and `--no-model` still gives you every git fact. I did not benchmark closed models, so I won't claim this beats them. For this job, private and free to run was what mattered, and an open-weight 7B was enough.
 
 ## My Agent Session
 
