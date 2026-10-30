@@ -1,20 +1,40 @@
 # Git Séance
 
-Let the files your repository deleted speak once more.
+Raise the dead files of your repository, question them, and find out what is still haunting your code.
 
-Git Séance digs through a repo's history for deleted text files and builds a headstone for each from git itself: who wrote it, who deleted it, when, why (the commit messages), how long it lived, and its last line. Then a local open-weight model, run through [Ollama](https://ollama.com) on localhost, lets the file say a few words in its own voice.
+Git Séance digs through a repo's history for deleted text files. Every fact about each one comes from git. A local open-weight model, run through [Ollama](https://ollama.com) on localhost, only gives it a voice.
 
 ```
-  pilot/run_poison_pilot.py
-  born  2026-09-22  by Ishika: "Add ATMC engine, pilot experiments, and demo app"
-  died  2026-10-10  by Ishika: "Add self-evolving coding assistant loop, ..." (574028e1)
-  lived 18 days, 157 lines
-  last words: main()
+  THE CORONER'S REPORT
+  13 souls lie here, living 17 days on average.
+  Longest life: app/frontend/src/pages/Demo.jsx (18 days).
+  Hands that deleted the most: Ishika (13)
+  Worst night: commit cb3fbaa3 took 9 files at once: "Central config and real sentence ..."
+  Probable causes (guessed from commit messages): unrecorded 9, collateral damage 4
 
-I was a program designed to explore how trust-aware mechanisms could help ...
+  ╭─────────────────────────────────────╮
+  │             R . I . P .             │
+  │      pilot/run_poison_pilot.py      │
+  │       2026-09-22 - 2026-10-10       │
+  │       lived 18 days, 157 lines      │
+  │               "main()"              │
+  │  cause of death: collateral damage  │
+  ╰─────────────────────────────────────╯
 ```
 
-Every fact on the headstone comes from git. The model only phrases it, and it is told not to invent reasons, so when history does not say why a file died, the ghost says it does not know. It can still over-read a commit message, so treat the voice as a remembrance, not a record.
+## What it does
+
+| Feature | What you get | Where the facts come from |
+|---|---|---|
+| **Headstones** | Born and died dates and authors, both commit messages, lifespan, size, last line | `git log`, `git show` |
+| **Hauntings** | Living lines that still mention a dead file, such as an import of a module that no longer exists | `git grep` on HEAD |
+| **Reincarnations** | Files that were only renamed (for example `.js` to `.jsx`) are reported as alive, not as ghosts | `git ls-files` |
+| **Coroner's report** | Who deleted the most, the commit that was a mass grave, average lifespan, probable causes | `git log` (causes are a keyword guess, labelled as such) |
+| **Whispers** | A few sentences in the dead file's voice, streamed live as the model writes | local model |
+| **`--talk`** | A séance: ask a deleted file questions. It only knows its own code and facts, and says "I do not remember" otherwise | local model, grounded in the file |
+| **`--raise`** | Writes a file's last living version into a folder of your choice. Your repo is never touched | `git show` |
+| **`--html`** | A self-contained spooky graveyard page (no network, no scripts): click a tombstone to hear it | all of the above |
+| **`--out`** | An ofrenda: a markdown file of every headstone and whisper | all of the above |
 
 ## Run it
 
@@ -22,23 +42,26 @@ Python 3.10+ (standard library only), git, and Ollama with a model pulled.
 
 ```bash
 ollama pull qwen2.5-coder:7b-instruct
-python3 seance.py /path/to/repo --limit 3 --out ofrenda.md
-python3 seance.py /path/to/repo --no-model        # headstones only, no model
-python3 seance.py /path/to/repo --model gemma3:4b  # any local model
-```
 
-`--out` writes an ofrenda: a markdown file with every headstone and whisper.
+python3 seance.py /path/to/repo --limit 5                  # report, headstones, hauntings, whispers
+python3 seance.py /path/to/repo --html graveyard.html      # the graveyard page
+python3 seance.py /path/to/repo --talk 2                   # hold a séance with ghost number 2
+python3 seance.py /path/to/repo --raise old/module.py      # restore it into ./resurrected
+python3 seance.py /path/to/repo --no-model                 # facts only, no model needed
+python3 seance.py /path/to/repo --model gemma3:4b          # any local model
+```
 
 ## Privacy
 
-The only network call is to `localhost:11434`. Your history, file contents and commit messages never leave the machine, which matters because the files people delete are often the ones they would not paste into a hosted API.
+The only network call is to `localhost:11434`. Your history, file contents and commit messages never leave the machine. The generated HTML loads nothing from the network. The files people delete are often the ones they would not paste into a hosted API.
 
-## Limits
+## Honest limits
 
-- It lists files deleted outright. Renamed files are not treated as deaths, and files over 200 KB or containing binary data are skipped.
-- Ghosts are ranked by how long they lived, then by size.
-- The model sees only the first 2,500 characters of the file.
-- Output varies by model. Tested with Qwen2.5-Coder 7B on an M3 Pro: about 9 seconds per ghost.
+- **The voice can invent.** The model is told to use only the facts and to admit when it does not know, and it often does ("the reason is not recorded"). A 7B model still sometimes over-reads a commit message and states a reason as fact. The headstone and report are git facts; the whisper is not.
+- **Hauntings are text matches, not a parser.** They search for the full path, the path without its extension, and the bare name only when it is distinctive (8+ characters, not generic, and not shared with a living file). They can miss references written another way and can still match prose. Treat a haunting as a lead to check.
+- **Causes of death are guessed** from keywords in the deleting commit's message.
+- It lists files deleted outright. It scans the 400 most recent deletions, skips files over 200 KB or with binary data, and shows the model only the first 2,500 characters of a file.
+- Tested with Qwen2.5-Coder 7B on an M3 Pro: roughly 10 seconds per ghost.
 
 ## Tests
 
@@ -46,4 +69,4 @@ The only network call is to `localhost:11434`. Your history, file contents and c
 PYTHONPATH=. python3 -m unittest test_seance
 ```
 
-The tests build a throwaway git repo, so they need git but not Ollama.
+20 tests build throwaway git repos and need git but not Ollama. They cover the facts, hauntings (including the false positives we hit on real repos), reincarnation, the coroner, `--raise` (including refusing paths that escape the folder), `--talk` with a mocked model, and HTML escaping of everything that comes from history.

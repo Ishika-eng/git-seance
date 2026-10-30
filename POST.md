@@ -1,5 +1,5 @@
 ---
-title: Git Séance: letting deleted files speak, with a model that never leaves my laptop
+title: Git Séance: raising a repo's deleted files and asking what still haunts it
 published: false
 tags: devchallenge, hf26challenge
 ---
@@ -8,31 +8,51 @@ tags: devchallenge, hf26challenge
 
 ## What I Built
 
-Every repository has a graveyard: the files someone deleted. `git log` knows exactly who wrote each one, when it was born, when it died and what the commit message said at the funeral. Nobody ever reads it.
+Every repository has a graveyard: the files someone deleted. `git log` knows who wrote each one, when it was born, when it died and what the commit message said at the funeral. Nobody ever reads it.
 
-Git Séance exhumes them. It finds the longest-lived deleted files in a repo, builds a headstone for each from git alone (born, died, by whom, why, lifespan, last line), and then a local open-weight model lets the file say a few words from beyond the repository. The result can be saved as an ofrenda, a markdown file of remembrances.
+Git Séance digs it up. It finds a repo's deleted files and gives each a tombstone made only of git facts. A local open-weight model then lets the file speak, and you can question it. The part I like best is what it does beyond the voice:
 
-I took the theme two ways at once: the spooky one (a file speaking from beyond `git rm`) and the Día de los Muertos one (honoring work that existed, mattered for a while, and was set down on purpose).
+- **Hauntings.** It searches the living code for lines that still mention a dead file, such as an import of a module that no longer exists. Deleted files are not always gone.
+- **Reincarnations.** If a "deleted" file was only renamed (`useWebSocket.js` became `.jsx`), it says so instead of pretending it died.
+- **The coroner's report.** Who deleted the most, the commit that was a mass grave, the average lifespan.
+- **`--talk`.** A séance. Ask a deleted file why it died. It only knows its own code and history, and says "I do not remember" when you ask anything else.
+- **`--raise`.** Restores the file's last living version into a folder. Your repo is untouched.
+- **`--html`.** A self-contained graveyard page with moonlight, fog and clickable tombstones. No network, no scripts.
 
-This is what it said for a file from my own college project, which lived 18 days:
+I took the theme two ways at once: the spooky one (a file speaking from beyond `git rm`, still haunting its old imports) and the Día de los Muertos one (honoring work that existed, mattered for a while, and was set down on purpose).
+
+Here is the coroner's report and one tombstone from my own college project:
 
 ```
-  pilot/run_poison_pilot.py
-  born  2026-09-22  by Ishika: "Add ATMC engine, pilot experiments, and demo app"
-  died  2026-10-10  by Ishika: "Add self-evolving coding assistant loop, evaluation harness and Assistant UI" (574028e1)
-  lived 18 days, 157 lines
-  last words: main()
+THE CORONER'S REPORT
+13 souls lie here, living 17 days on average.
+Longest life: app/frontend/src/pages/Demo.jsx (18 days).
+Hands that deleted the most: Ishika (13)
+Worst night: commit cb3fbaa3 took 9 files at once: "Central config and real sentence embeddings for ATMC"
 
-I was born to test a hypothesis about the effectiveness of a trust-aware retrieval
-system in a controlled environment. My days were short, yet I played a crucial role
-in understanding the dynamics of trust and memory in language models. [...]
-I am gone, but my legacy lives on in the lessons learned and the groundwork laid
-for future research.
+╭─────────────────────────────────────╮
+│             R . I . P .             │
+│      pilot/run_poison_pilot.py      │
+│       2026-09-22 - 2026-10-10       │
+│       lived 18 days, 157 lines      │
+│               "main()"              │
+│  cause of death: collateral damage  │
+╰─────────────────────────────────────╯
+```
+
+And a séance with that file, where the last answer is the one I was checking for:
+
+```
+you > why were you deleted?
+run_poison_pilot.py > I was deleted because the project's goals shifted, and the team decided to
+incorporate a self-evolving coding assistant loop, evaluation harness, and Assistant UI. [...]
+you > what is the capital of France?
+run_poison_pilot.py > I do not remember.
 ```
 
 ## Demo
 
-<!-- TODO: add a short screen recording of `python3 seance.py <repo>` running, or screenshots. Nothing is deployed; it is a command line tool. -->
+<!-- TODO: add a short screen recording of `python3 seance.py <repo> --html graveyard.html`, then `--talk`, plus a screenshot of the graveyard page. Nothing is deployed; it is a command line tool. -->
 
 ## Code
 
@@ -40,19 +60,22 @@ for future research.
 
 ## How I Built It
 
-- **Git does the remembering.** `git log --diff-filter=D` lists deletions. `git show <commit>^:<path>` recovers the last version, and a second `git log --diff-filter=A --follow` finds the birth. Lifespan, line count and last words are computed, never generated.
-- **An open-weight model does the speaking.** Qwen2.5-Coder 7B Instruct (Apache 2.0) runs through Ollama at `localhost:11434`. The tool calls it with Python's standard library. There are no dependencies to install.
-- **The model is fenced in.** The system prompt says to use only the facts given, never invent names, dates or reasons, and to admit when it does not know why the file was deleted. Facts are printed in the headstone separately from the voice, so you can always see which part is git and which part is the model.
-- **It degrades gracefully.** If Ollama is not running, you still get headstones (`--no-model` does that on purpose).
-- **Tested without a model.** Six unit tests build a throwaway git repo and check the facts, the skipping of binary and living files, the ofrenda output, and survival when the model is down.
+- **Git does the remembering.** `git log --diff-filter=D` lists deletions. `git show <commit>^:<path>` recovers the last version, and `git log --diff-filter=A --follow` finds the birth. Lifespan, line count, last words and the coroner's numbers are computed, never generated. `git grep` on HEAD finds the hauntings, and `git ls-files` spots the reincarnations.
+- **An open-weight model does the speaking.** Qwen2.5-Coder 7B Instruct (Apache 2.0) runs through Ollama at `localhost:11434`. The tool streams tokens from it using Python's standard library, so the ghost speaks as the model writes. There are no dependencies to install.
+- **The model is fenced in.** The system prompt says to use only the facts and code given, never invent names, dates or reasons, and to admit when it does not know. Facts and voice are always shown separately, so you can see which part is git and which part is the model.
+- **Tested without a model.** Twenty unit tests build throwaway git repos and check the facts, hauntings, reincarnation, the coroner, `--raise` (including refusing paths that escape its folder), `--talk` with a mocked model, and HTML escaping.
 
-Honest notes on quality: on two ghosts, one correctly said the reason for its deletion "is not recorded in history". The other said it was "replaced by a more advanced system", which is a plausible reading of the commit message but still an inference. A 7B model embellishes in a warm, ghostly voice, and I left that in because the headstone sits right above it.
+Two things went wrong while building it, and fixing them made it better:
+- My cause-of-death guesser labelled "Remove the legacy script" as a *refactor*, because `move` matches inside `Remove`. A unit test caught it. Keywords now match only at the start of a word.
+- My first version of hauntings was noisy. Running it on my other repos, a deleted `server/Dockerfile` got blamed for every mention of the live root `Dockerfile`, and a rename from `.js` to `.jsx` looked like a broken import. Now the bare name only counts if it is distinctive and no living file shares it, and renames are reported as reincarnations. Both cases have tests.
+
+Honest notes on quality: the model is a 7B. It often admits "the reason is not recorded", but in the séance above it invented a reason ("the project's goals shifted") from a commit message that did not say that. That is why the git facts sit above every whisper. I have also not yet seen a real, verified broken import come out of a hauntings run on my own repos. The feature is covered by unit tests and by real runs that taught me what to filter out.
 
 ## Why Does Open Innovation Matter?
 
-The files people delete are often the ones they would least like to paste into a hosted API: abandoned experiments, old client code, things with a bad commit message. Because the model runs on my machine, a repository's whole history can be read by it without that history going anywhere. The only network call in the program is to localhost, and it works with the Wi-Fi off.
+The files people delete are often the ones they would least like to paste into a hosted API: abandoned experiments, old client code, things with a bad commit message. Because the model runs on my machine, a repository's entire history can be read, questioned and turned into a graveyard page without any of it going anywhere. The only network call is to localhost, the HTML page loads nothing, and it works with the Wi-Fi off.
 
-It is also a setting, not a dependency: `--model` takes any model Ollama can run, so I can swap models without changing a line. I did not benchmark closed models against this, so I will not claim it beats them. For this job, private and free to run was what mattered, and an open-weight 7B was enough.
+It is also a setting, not a dependency: `--model` takes any model Ollama can run. I did not benchmark closed models against this, so I will not claim it beats them. For this job, private and free to run was what mattered, and an open-weight 7B was enough.
 
 ## My Agent Session
 
@@ -64,4 +87,4 @@ It is also a setting, not a dependency: `--model` takes any model Ollama can run
 
 ## Prize Categories
 
-<!-- TODO: only list a partner category if you actually used its technology. This project uses none so far, so consider removing this section. -->
+<!-- TODO: only list a partner category if you actually used its technology. This project uses none, so consider removing this section. -->
