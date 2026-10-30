@@ -98,4 +98,8 @@ The model is also a setting, not a dependency: `--model` takes anything Ollama c
 
 ## The Spirit of It
 
-<!-- TODO: add one honest sentence about the moment it landed for you. Only you know whether it did. -->
+The first repo I pointed it at was my own college project. It reported 13 dead files, all deleted by me, living 17 days on average. I had written and removed them in a single month, and git had kept the record the whole time while I never went back to read it. One of them, an experiment script, said this about itself, and it is the part I keep rereading:
+
+> I was born to test a hypothesis about the effectiveness of a trust-aware retrieval system in a controlled environment. My days were short, yet I played a crucial role in understanding the dynamics of trust and memory in language models.
+
+A 7B model wrote that from a file's code and commit history, on my laptop. It is a bit grand for a 157-line script, but it is right that the experiment mattered for a while and then was set down on purpose.
