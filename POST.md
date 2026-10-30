@@ -36,7 +36,7 @@ for future research.
 
 ## Code
 
-<!-- TODO: embed the GitHub repo, e.g. {% embed https://github.com/<you>/git-seance %} -->
+{% embed https://github.com/Ishika-eng/git-seance %}
 
 ## How I Built It
 
