@@ -99,7 +99,3 @@ The model is also a setting, not a dependency: `--model` takes anything Ollama c
 ## The Spirit of It
 
 <!-- TODO: add one honest sentence about the moment it landed for you. Only you know whether it did. -->
-
-## Prize Categories
-
-<!-- TODO: only list a partner category if you actually used its technology. This project uses none, so consider removing this section. -->
