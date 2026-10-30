@@ -22,6 +22,10 @@ Git Séance digs through a repo's history for deleted text files. Every fact abo
   ╰─────────────────────────────────────╯
 ```
 
+![The graveyard page for a real repository, one tombstone opened](examples/graveyard.jpg)
+
+[`examples/`](examples) holds a real run on one of my own repositories: the [graveyard page](examples/graveyard.html) (download and open it, GitHub shows HTML as text), the [ofrenda](examples/ofrenda.md) and the raw [terminal output](examples/terminal-output.txt).
+
 ## What it does
 
 | Feature | What you get | Where the facts come from |

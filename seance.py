@@ -382,7 +382,7 @@ h1{font-size:clamp(2rem,6vw,3.4rem);margin:0;letter-spacing:.04em;font-weight:40
 @keyframes flicker{0%,18%,22%,60%,64%,100%{opacity:1}20%,62%{opacity:.55}}
 .sub{color:var(--dim);margin:.4rem 0 1.4rem}
 .coroner{border-left:3px solid var(--blood);padding:.4rem 1rem;background:#ffffff08;white-space:pre-wrap;font:14px/1.6 ui-monospace,Menlo,monospace;color:#cfcbe6}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:28px;margin:34px 0 120px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:28px;margin:34px 0 120px;align-items:start}
 .stone{background:linear-gradient(var(--stone2),var(--stone));border-radius:130px 130px 6px 6px;padding:58px 20px 20px;
 text-align:center;box-shadow:inset 0 0 30px #0008,0 10px 30px #0008;transition:transform .25s,box-shadow .25s;position:relative}
 .stone:hover,.stone[open]{transform:translateY(-6px);box-shadow:inset 0 0 30px #0008,0 0 36px #9ef0c433,0 10px 30px #0008}

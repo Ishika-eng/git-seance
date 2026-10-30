@@ -52,7 +52,13 @@ run_poison_pilot.py > I do not remember.
 
 ## Demo
 
-<!-- TODO: add a short screen recording of `python3 seance.py <repo> --html graveyard.html`, then `--talk`, plus a screenshot of the graveyard page. Nothing is deployed; it is a command line tool. -->
+Git Séance is a command line tool, so there is nothing deployed. This is the graveyard page it generated for my college project, with one tombstone opened:
+
+![The graveyard page, one tombstone opened](https://raw.githubusercontent.com/Ishika-eng/git-seance/main/examples/graveyard.jpg)
+
+The full run (graveyard page, ofrenda and raw terminal output) is in [`examples/`](https://github.com/Ishika-eng/git-seance/tree/main/examples). To try it on your own repo: `python3 seance.py /path/to/repo --html graveyard.html`.
+
+<!-- TODO (optional): a short screen recording of the terminal run and `--talk` would make this stronger. -->
 
 ## Code
 

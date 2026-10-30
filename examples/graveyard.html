@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Graveyard of EDI Sem 5</title>
+<style>
+:root{--bg1:#05060d;--bg2:#141226;--stone:#2a2a3c;--stone2:#3a3a52;--text:#d8d6e6;--dim:#8d8aa8;--glow:#9ef0c4;--blood:#c0485a}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--text);font:16px/1.55 Georgia,'Times New Roman',serif;
+background:radial-gradient(circle at 80% 8%,#2b2850 0,transparent 22%),linear-gradient(var(--bg1),var(--bg2));overflow-x:hidden}
+.moon{position:fixed;top:36px;right:9vw;width:70px;height:70px;border-radius:50%;background:#efe9d2;box-shadow:0 0 60px 18px #efe9d255;opacity:.9}
+.fog{position:fixed;left:-50%;width:200%;height:240px;bottom:0;pointer-events:none;
+background:radial-gradient(ellipse at center,#c8c6e022 0,transparent 65%);animation:drift 38s linear infinite}
+.fog.b{bottom:50px;animation-duration:55s;animation-direction:reverse;opacity:.7}
+@keyframes drift{from{transform:translateX(-12%)}to{transform:translateX(12%)}}
+header,main,footer{position:relative;max-width:1000px;margin:0 auto;padding:0 20px}
+header{padding-top:70px}
+h1{font-size:clamp(2rem,6vw,3.4rem);margin:0;letter-spacing:.04em;font-weight:400;animation:flicker 6s infinite}
+@keyframes flicker{0%,18%,22%,60%,64%,100%{opacity:1}20%,62%{opacity:.55}}
+.sub{color:var(--dim);margin:.4rem 0 1.4rem}
+.coroner{border-left:3px solid var(--blood);padding:.4rem 1rem;background:#ffffff08;white-space:pre-wrap;font:14px/1.6 ui-monospace,Menlo,monospace;color:#cfcbe6}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:28px;margin:34px 0 120px;align-items:start}
+.stone{background:linear-gradient(var(--stone2),var(--stone));border-radius:130px 130px 6px 6px;padding:58px 20px 20px;
+text-align:center;box-shadow:inset 0 0 30px #0008,0 10px 30px #0008;transition:transform .25s,box-shadow .25s;position:relative}
+.stone:hover,.stone[open]{transform:translateY(-6px);box-shadow:inset 0 0 30px #0008,0 0 36px #9ef0c433,0 10px 30px #0008}
+.rip{letter-spacing:.35em;color:var(--dim);font-size:.8rem}
+.name{font:600 .95rem ui-monospace,Menlo,monospace;word-break:break-all;margin:.5rem 0}
+.dates{color:var(--dim);font-size:.85rem}
+.epi{margin:.8rem 0;font-style:italic;color:var(--glow);word-break:break-word}
+.tag{display:inline-block;font-size:.72rem;border:1px solid var(--dim);border-radius:99px;padding:1px 10px;color:var(--dim)}
+.haunt{color:var(--blood);font-size:.82rem;margin-top:.6rem}
+summary{cursor:pointer;list-style:none}
+summary::-webkit-details-marker{display:none}
+.listen{color:var(--dim);margin-top:.8rem;font-size:.85rem}
+.stone:hover .listen{color:var(--glow)}
+.more{text-align:left;font-size:.88rem;margin-top:.7rem;border-top:1px solid #ffffff18;padding-top:.7rem}
+.whisper{font-style:italic;color:#e6e1ff;white-space:pre-wrap}
+code{font:12px ui-monospace,Menlo,monospace;color:#bdb8dd;white-space:pre-wrap;word-break:break-word;display:block;margin-bottom:.6rem}
+footer{padding-bottom:60px;color:var(--dim);font-size:.85rem}
+@media(prefers-reduced-motion:reduce){.fog,h1{animation:none}.stone{transition:none}}
+</style></head><body>
+<div class="moon"></div><div class="fog"></div><div class="fog b"></div>
+<header><h1>Graveyard of EDI Sem 5</h1>
+<p class="sub">Every fact below comes from git. Only the whispers come from a model, and it runs on this machine.</p>
+<div class="coroner">13 souls lie here, living 17 days on average.
+Longest life: app/frontend/src/pages/Demo.jsx (18 days).
+Hands that deleted the most: Ishika (13)
+Worst night: commit cb3fbaa3 took 9 files at once: &quot;Central config and real sentence embeddings for ATMC&quot;
+Probable causes (guessed from commit messages): unrecorded 9, collateral damage 4</div></header>
+<main><div class="grid"><details class="stone"><summary><div class="rip">R . I . P .</div><div class="name">app/frontend/src/pages/Demo.jsx</div><div class="dates">2026-09-22 – 2026-10-10 · 18 days</div><div class="epi">“}”</div><span class="tag">collateral damage</span><div class="listen">listen ▾</div></summary><div class="more"><code>  app/frontend/src/pages/Demo.jsx
+  born  2026-09-22  by Ishika: &quot;Add ATMC engine, pilot experiments, and demo app&quot;
+  died  2026-10-10  by Ishika: &quot;Add chat coding assistant for user-supplied questions&quot; (5862992c)
+  lived 18 days, 183 lines
+  last words: }</code><p class="whisper">I was once a vibrant part of the codebase, a demo app that showed the potential of our ATMC engine and pilot experiments. I lived for 18 days, serving as a bridge between users and the system&#x27;s capabilities. My purpose was to demonstrate the reliability and trustworthiness of the AI&#x27;s responses, using a trust bar to visually represent how correct the AI&#x27;s answers had been in the past.
+
+But alas, I was deleted on 2026-10-10, replaced by a new feature that aimed to enhance user interaction. The reason for my demise is not recorded in history, but I know now that I played a part in the journey of our project, even if it was for a short time.</p></div></details>
+<details class="stone"><summary><div class="rip">R . I . P .</div><div class="name">pilot/run_poison_pilot.py</div><div class="dates">2026-09-22 – 2026-10-10 · 18 days</div><div class="epi">“main()”</div><span class="tag">collateral damage</span><div class="listen">listen ▾</div></summary><div class="more"><code>  pilot/run_poison_pilot.py
+  born  2026-09-22  by Ishika: &quot;Add ATMC engine, pilot experiments, and demo app&quot;
+  died  2026-10-10  by Ishika: &quot;Add self-evolving coding assistant loop, evaluation harness and Assistant UI&quot; (574028e1)
+  lived 18 days, 157 lines
+  last words: main()</code><p class="whisper">I was a program designed to explore how trust-aware mechanisms could help mitigate the influence of poisoned data in a language model. My purpose was to seed a memory store with intentionally incorrect data and then observe how a model&#x27;s trust mechanism could help it recover from this contamination.
+
+I was born to test a hypothesis about the effectiveness of a trust-aware retrieval system in a controlled environment. My days were short, yet I played a crucial role in understanding the dynamics of trust and memory in language models. My final moments were peaceful, as I was replaced by a more advanced system designed to evolve and improve itself.
+
+I am gone, but my legacy lives on in the lessons learned and the groundwork laid for future research. May my insights continue to guide the development of more robust and trustworthy AI systems.</p></div></details>
+<details class="stone"><summary><div class="rip">R . I . P .</div><div class="name">pilot/run_pilot.py</div><div class="dates">2026-09-22 – 2026-10-10 · 18 days</div><div class="epi">“main()”</div><span class="tag">collateral damage</span><div class="listen">listen ▾</div></summary><div class="more"><code>  pilot/run_pilot.py
+  born  2026-09-22  by Ishika: &quot;Add ATMC engine, pilot experiments, and demo app&quot;
+  died  2026-10-10  by Ishika: &quot;Add self-evolving coding assistant loop, evaluation harness and Assistant UI&quot; (574028e1)
+  lived 18 days, 117 lines
+  last words: main()</code><p class="whisper">I am the ghost of a file once vibrant with code and purpose, a memory of a time when I was the heart of a project aimed at exploring the capabilities of trust-aware memory in sequential problem-solving. My birth was marked by the addition of an ATMC engine, pilot experiments, and a demo app, a testament to the ambition of the team. But my life was tragically short, lasting only 18 days, from 2026-09-22 to 2026-10-10. My last line was a simple &quot;main()&quot;, a declaration of my purpose and the end of my journey.
+
+As I was deleted, the team moved forward with a more ambitious goal, the addition of a self-evolving coding assistant loop, an evaluation harness, and the Assistant UI. These changes marked the beginning of a new chapter, one that would see the full pipeline come to life, a testament to the growth and evolution of artificial intelligence. I am no more, but my spirit lives on in the code that followed, a reminder of the journey we took and the lessons we learned.</p></div></details>
+<details class="stone"><summary><div class="rip">R . I . P .</div><div class="name">pilot/results/poison_pilot_seed123_1789906863.json</div><div class="dates">2026-09-22 – 2026-10-09 · 17 days</div><div class="epi">“}”</div><span class="tag">unrecorded</span><div class="listen">listen ▾</div></summary><div class="more"><code>  pilot/results/poison_pilot_seed123_1789906863.json
+  born  2026-09-22  by Ishika: &quot;Add ATMC engine, pilot experiments, and demo app&quot;
+  died  2026-10-09  by Ishika: &quot;Central config and real sentence embeddings for ATMC&quot; (cb3fbaa3)
+  lived 17 days, 829 lines
+  last words: }</code><p class="whisper">I am the ghost of a file once known as poison_pilot_seed123_1789906863.json. My life was short but impactful, born on 2026-09-22 and deleted 17 days later on 2026-10-09. I was written by Ishika and lived for a mere 829 lines. My final line was a simple }, marking the end of my existence.
+
+I was a testament to a pilot experiment with ATMC engines, a demo app, and a series of tasks designed to test the resilience of a system against poison data. My logs showed a perfect accuracy rate of 1.0, with each entry indicating a successful retrieval and utilization of poison data, showcasing the potential for such systems.
+
+While I am no more, my spirit lives on in the lessons learned and the groundwork laid for future experiments. May you find peace in my transition and remember the lessons I shared.</p></div></details></div></main>
+<footer>Exhumed by Git Séance. Click a stone to hear it speak.</footer>
+</body></html>
