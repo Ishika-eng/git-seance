@@ -1,6 +1,6 @@
 ---
-title: Git Séance: the deleted files that still haunt your repo
-published: false
+title: "Git Séance: the deleted files that still haunt your repo"
+published: true
 tags: devchallenge, hf26challenge
 ---
 
@@ -69,8 +69,6 @@ pip install git+https://github.com/Ishika-eng/git-seance
 git seance --html graveyard.html     # run inside any git repo
 ```
 
-<!-- TODO (optional): a short screen recording of the hook and `--talk` would make this stronger. -->
-
 ## Code
 
 {% embed https://github.com/Ishika-eng/git-seance %}
@@ -91,10 +89,6 @@ Two bugs made it better. My cause-of-death guesser labelled "Remove the legacy s
 The files people delete are often the ones they would least like to paste into a hosted API: abandoned experiments, old client code, things with a bad commit message. Because the model runs on my machine, a repository's whole history can be read, questioned and turned into a graveyard page without any of it leaving. The only network call is to localhost, and the HTML page loads nothing from the network.
 
 The model is also a setting, not a dependency: `--model` takes anything Ollama can run, and `--no-model` still gives you every git fact. I did not benchmark closed models, so I won't claim this beats them. For this job, private and free to run was what mattered, and an open-weight 7B was enough.
-
-## My Agent Session
-
-<!-- TODO (optional): save this session with DevRelay and embed it. -->
 
 ## The Spirit of It
 
