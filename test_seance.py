@@ -189,6 +189,130 @@ class SeanceTest(unittest.TestCase):
 
         seance.talk(g, "m", input_fn=lambda _: next(answers), say=lambda *_: None, chat_fn=broken)
 
+    # --- successors and zombies
+
+    def test_successor_follows_a_git_rename(self):
+        write(self.repo, "old_engine.py", "".join(f"step_{i}()\n" for i in range(20)))
+        commit(self.repo, "Add engine", "2024-02-01T12:00:00")
+        run(self.repo, "mv", "old_engine.py", "core_engine.py")
+        commit(self.repo, "Rename engine", "2024-06-01T12:00:00")
+        g = [x for x in seance.exhume(self.repo) if x.path == "old_engine.py"][0]
+        self.assertEqual(seance.find_successor(self.repo, g), ("core_engine.py", 100))
+
+    def test_successor_finds_the_similar_file_added_in_the_same_commit(self):
+        body = "".join(f"compute_{i}(value)\n" for i in range(20))
+        write(self.repo, "parser_v1.py", body)
+        commit(self.repo, "Add parser", "2024-02-01T12:00:00")
+        run(self.repo, "rm", "-q", "parser_v1.py")
+        write(self.repo, "parsing/parser.py", body.replace("compute_1(", "calc_1(")
+              + "".join(f"extra_{i}()\n" for i in range(4)))
+        write(self.repo, "parsing/unrelated.py", "".join(f"other_{i}()\n" for i in range(20)))
+        commit(self.repo, "Rewrite the parser", "2024-06-01T12:00:00")
+        g = [x for x in seance.exhume(self.repo) if x.path == "parser_v1.py"][0]
+        path, pct = seance.find_successor(self.repo, g)
+        self.assertEqual(path, "parsing/parser.py")
+        self.assertTrue(60 <= pct < 100)
+
+    def test_no_successor_when_the_new_files_are_unrelated(self):
+        run(self.repo, "rm", "-q", "keep.py")
+        write(self.repo, "fresh.py", "".join(f"brand_new_{i}()\n" for i in range(20)))
+        commit(self.repo, "Swap files", "2024-06-01T12:00:00")
+        g = [x for x in seance.exhume(self.repo) if x.path == "keep.py"][0]
+        self.assertIsNone(seance.find_successor(self.repo, g))
+
+    def test_zombies_are_files_that_died_and_came_back(self):
+        self.assertEqual(seance.zombies(self.repo), [])
+        write(self.repo, "legacy_importer.py", "back\n" * 10)
+        commit(self.repo, "Restore it", "2024-04-01T12:00:00")
+        run(self.repo, "rm", "-q", "legacy_importer.py")
+        commit(self.repo, "Remove again", "2024-05-01T12:00:00")
+        write(self.repo, "legacy_importer.py", "back again\n" * 10)
+        commit(self.repo, "Restore it again", "2024-06-01T12:00:00")
+        self.assertEqual(seance.zombies(self.repo), [("legacy_importer.py", 2)])
+        report = seance.coroner(seance.exhume(self.repo) or [self.fake_ghost()], seance.zombies(self.repo))
+        self.assertIn("legacy_importer.py (2x)", seance.coroner_text(report))
+
+    def fake_ghost(self):
+        g = seance.exhume(self.repo)
+        return g[0] if g else seance.Ghost(
+            "x", seance.datetime(2024, 1, 1).astimezone(), "a", "m", seance.datetime(2024, 1, 2).astimezone(),
+            "a", "m", "c0ffee00", 5, "x", "x")
+
+    # --- last rites
+
+    def stage_deletion_of_a_referenced_file(self):
+        write(self.repo, "helpers/plugin_loader.py", "def load():\n    pass\n" * 4)
+        write(self.repo, "app.py", "import plugin_loader\n")
+        commit(self.repo, "Add plugin loader", "2024-04-01T12:00:00")
+        run(self.repo, "rm", "-q", "helpers/plugin_loader.py")
+
+    def test_staged_deletion_finds_what_still_mentions_it(self):
+        self.stage_deletion_of_a_referenced_file()
+        staged = seance.staged_ghosts(self.repo)
+        self.assertEqual([g.path for g in staged], ["helpers/plugin_loader.py"])
+        self.assertEqual(staged[0].haunting, [("app.py", 1, "import plugin_loader")])
+        self.assertIn("Still haunting 1 place", seance.last_rites_text(staged))
+
+    def test_staged_deletion_with_no_mentions_is_at_peace(self):
+        run(self.repo, "rm", "-q", "keep.py")
+        staged = seance.staged_ghosts(self.repo)
+        self.assertEqual(staged[0].haunting, [])
+        self.assertIn("It rests", seance.last_rites_text(staged))
+
+    def test_last_rites_is_silent_with_nothing_staged(self):
+        seance.main([self.repo, "--last-rites", "--strict"])
+
+    def test_strict_last_rites_fails_only_when_something_is_haunted(self):
+        self.stage_deletion_of_a_referenced_file()
+        seance.main([self.repo, "--last-rites", "--no-model"])
+        with self.assertRaises(SystemExit) as cm:
+            seance.main([self.repo, "--last-rites", "--strict", "--no-model"])
+        self.assertEqual(cm.exception.code, 1)
+
+    def test_hook_runs_on_commit_and_warns_without_blocking(self):
+        hook = seance.install_hook(self.repo)
+        self.assertTrue(os.access(hook, os.X_OK))
+        self.stage_deletion_of_a_referenced_file()
+        env = {**os.environ, "GIT_AUTHOR_NAME": "Ada", "GIT_AUTHOR_EMAIL": "a@x.io",
+               "GIT_COMMITTER_NAME": "Ada", "GIT_COMMITTER_EMAIL": "a@x.io"}
+        done = subprocess.run(["git", "-C", self.repo, "commit", "-m", "Drop loader"],
+                              capture_output=True, text=True, env=env)
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertIn("LAST RITES", done.stdout + done.stderr)
+        self.assertIn("app.py:1", done.stdout + done.stderr)
+
+    def test_install_hook_never_overwrites_someone_elses_hook(self):
+        hook = os.path.join(self.repo, ".git", "hooks", "pre-commit")
+        os.makedirs(os.path.dirname(hook), exist_ok=True)
+        with open(hook, "w") as f:
+            f.write("#!/bin/sh\necho mine\n")
+        with self.assertRaises(RuntimeError):
+            seance.install_hook(self.repo)
+        with open(hook) as f:
+            self.assertIn("echo mine", f.read())
+
+    def test_install_hook_can_be_rerun(self):
+        seance.install_hook(self.repo)
+        seance.install_hook(self.repo)
+
+    # --- lifespans and the friendly error
+
+    def test_lifespan_chart_has_one_bar_per_ghost_and_escapes_names(self):
+        g = seance.exhume(self.repo)[0]
+        g.path = "<img src=x>.py"
+        svg = seance.lifespan_svg([g])
+        self.assertEqual(svg.count("<circle"), 1)
+        self.assertNotIn("<img", svg)
+        self.assertEqual(seance.lifespan_svg([]), "")
+        page = seance.graveyard_html([g], [None], "demo", seance.coroner([g]), lifespans=[g])
+        self.assertIn("<svg", page)
+
+    def test_a_folder_that_is_not_a_repo_gets_a_friendly_message(self):
+        with tempfile.TemporaryDirectory() as d:
+            with self.assertRaises(SystemExit) as cm:
+                seance.main([d, "--no-model"])
+            self.assertIn("not a git repository", str(cm.exception.code))
+
     def test_model_failure_does_not_stop_the_seance(self):
         with mock.patch.object(seance, "chat", side_effect=OSError("down")):
             seance.main([self.repo, "--limit", "1"])

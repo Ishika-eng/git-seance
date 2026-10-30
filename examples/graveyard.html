@@ -17,6 +17,12 @@ h1{font-size:clamp(2rem,6vw,3.4rem);margin:0;letter-spacing:.04em;font-weight:40
 @keyframes flicker{0%,18%,22%,60%,64%,100%{opacity:1}20%,62%{opacity:.55}}
 .sub{color:var(--dim);margin:.4rem 0 1.4rem}
 .coroner{border-left:3px solid var(--blood);padding:.4rem 1rem;background:#ffffff08;white-space:pre-wrap;font:14px/1.6 ui-monospace,Menlo,monospace;color:#cfcbe6}
+.life{margin-top:22px}
+.life h2{font:400 .95rem Georgia,serif;color:var(--dim);margin:0 0 4px}
+.lifespans{width:100%;height:auto;display:block}
+.lifespans line{stroke:var(--glow);stroke-width:3;stroke-linecap:round;opacity:.65}
+.lifespans circle{fill:var(--blood)}
+.lifespans text{fill:var(--dim);font:11px ui-monospace,Menlo,monospace}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:28px;margin:34px 0 120px;align-items:start}
 .stone{background:linear-gradient(var(--stone2),var(--stone));border-radius:130px 130px 6px 6px;padding:58px 20px 20px;
 text-align:center;box-shadow:inset 0 0 30px #0008,0 10px 30px #0008;transition:transform .25s,box-shadow .25s;position:relative}
@@ -44,7 +50,8 @@ footer{padding-bottom:60px;color:var(--dim);font-size:.85rem}
 Longest life: app/frontend/src/pages/Demo.jsx (18 days).
 Hands that deleted the most: Ishika (13)
 Worst night: commit cb3fbaa3 took 9 files at once: &quot;Central config and real sentence embeddings for ATMC&quot;
-Probable causes (guessed from commit messages): unrecorded 9, collateral damage 4</div></header>
+Probable causes (guessed from commit messages): unrecorded 9, collateral damage 4</div>
+<div class="life"><h2>Every ghost, from birth (green) to death (red)</h2><svg class="lifespans" viewBox="0 0 900 226" role="img" aria-label="Lifespan of each deleted file"><text x="12" y="14">2026-09-22</text><text x="888" y="14" text-anchor="end">2026-10-10</text><g><title>app/frontend/src/pages/Demo.jsx: 18 days</title><line x1="12.0" y1="22" x2="888.0" y2="22"/><circle cx="888.0" cy="22" r="4"/></g><g><title>pilot/run_poison_pilot.py: 18 days</title><line x1="12.0" y1="36" x2="874.3" y2="36"/><circle cx="874.3" cy="36" r="4"/></g><g><title>pilot/run_pilot.py: 18 days</title><line x1="12.0" y1="50" x2="874.3" y2="50"/><circle cx="874.3" cy="50" r="4"/></g><g><title>pilot/results/poison_pilot_seed123_1789906863.json: 17 days</title><line x1="12.0" y1="64" x2="838.8" y2="64"/><circle cx="838.8" cy="64" r="4"/></g><g><title>pilot/results/poison_pilot_seed123_1789909113.json: 17 days</title><line x1="12.0" y1="78" x2="838.8" y2="78"/><circle cx="838.8" cy="78" r="4"/></g><g><title>pilot/results/poison_pilot_seed42_1789906365.json: 17 days</title><line x1="12.0" y1="92" x2="838.8" y2="92"/><circle cx="838.8" cy="92" r="4"/></g><g><title>pilot/results/poison_pilot_seed42_1789908491.json: 17 days</title><line x1="12.0" y1="106" x2="838.8" y2="106"/><circle cx="838.8" cy="106" r="4"/></g><g><title>pilot/results/poison_pilot_seed456_1789907376.json: 17 days</title><line x1="12.0" y1="120" x2="838.8" y2="120"/><circle cx="838.8" cy="120" r="4"/></g><g><title>pilot/results/poison_pilot_seed456_1789909673.json: 17 days</title><line x1="12.0" y1="134" x2="838.8" y2="134"/><circle cx="838.8" cy="134" r="4"/></g><g><title>pilot/results/pilot_1788090636.json: 17 days</title><line x1="12.0" y1="148" x2="838.8" y2="148"/><circle cx="838.8" cy="148" r="4"/></g><g><title>pilot/results/ablation_seed42_1790144126.json: 15 days</title><line x1="112.8" y1="162" x2="838.8" y2="162"/><circle cx="838.8" cy="162" r="4"/></g><g><title>pilot/results/ablation_seed999_1790142940.json: 15 days</title><line x1="112.8" y1="176" x2="838.8" y2="176"/><circle cx="838.8" cy="176" r="4"/></g><g><title>pilot/run_ablation.py: 15 days</title><line x1="112.8" y1="190" x2="874.3" y2="190"/><circle cx="874.3" cy="190" r="4"/></g></svg></div></header>
 <main><div class="grid"><details class="stone"><summary><div class="rip">R . I . P .</div><div class="name">app/frontend/src/pages/Demo.jsx</div><div class="dates">2026-09-22 – 2026-10-10 · 18 days</div><div class="epi">“}”</div><span class="tag">collateral damage</span><div class="listen">listen ▾</div></summary><div class="more"><code>  app/frontend/src/pages/Demo.jsx
   born  2026-09-22  by Ishika: &quot;Add ATMC engine, pilot experiments, and demo app&quot;
   died  2026-10-10  by Ishika: &quot;Add chat coding assistant for user-supplied questions&quot; (5862992c)
@@ -72,10 +79,11 @@ As I was deleted, the team moved forward with a more ambitious goal, the additio
   born  2026-09-22  by Ishika: &quot;Add ATMC engine, pilot experiments, and demo app&quot;
   died  2026-10-09  by Ishika: &quot;Central config and real sentence embeddings for ATMC&quot; (cb3fbaa3)
   lived 17 days, 829 lines
-  last words: }</code><p class="whisper">I am the ghost of a file once known as poison_pilot_seed123_1789906863.json. My life was short but impactful, born on 2026-09-22 and deleted 17 days later on 2026-10-09. I was written by Ishika and lived for a mere 829 lines. My final line was a simple }, marking the end of my existence.
+  last words: }
+  successor: pilot/results/tfidf_baseline/poison_pilot_seed123_1789906863.json (100% similar, same commit)</code><p class="whisper">I am the ghost of a JSON file that once contained the results of a crucial experiment. My purpose was to track the performance of a poison-resistant model across multiple tasks. My journey began on 2026-09-22, when I was created by Ishika as part of a larger project to enhance ATMC engines and pilot experiments. I was a meticulous keeper of data, logging the success of each task, the exposure of the poison, and the model&#x27;s memory size. 
 
-I was a testament to a pilot experiment with ATMC engines, a demo app, and a series of tasks designed to test the resilience of a system against poison data. My logs showed a perfect accuracy rate of 1.0, with each entry indicating a successful retrieval and utilization of poison data, showcasing the potential for such systems.
+My life was short, only 17 days, but during that time, I witnessed the model&#x27;s steady progress. Each entry in the log showed a perfect accuracy, with the number of poison samples retrieved and used remaining constant. My purpose was noble, but my time was cut short by Ishika, who moved on to a new direction in the project, focusing on central configuration and real sentence embeddings for ATMC.
 
-While I am no more, my spirit lives on in the lessons learned and the groundwork laid for future experiments. May you find peace in my transition and remember the lessons I shared.</p></div></details></div></main>
+Now, I am nothing more than a memory in the history of the repository, a testament to a brief but impactful experiment. My last line was a simple &quot;}&quot;, a symbol that marks the end of a story. Yet, my legacy lives on in the code and data that followed me, a reminder of the work that was done and the progress that was made.</p></div></details></div></main>
 <footer>Exhumed by Git Séance. Click a stone to hear it speak.</footer>
 </body></html>

@@ -77,30 +77,32 @@ I am the ghost of a file once vibrant with code and purpose, a memory of a time 
 
 As I was deleted, the team moved forward with a more ambitious goal, the addition of a self-evolving coding assistant loop, an evaluation harness, and the Assistant UI. These changes marked the beginning of a new chapter, one that would see the full pipeline come to life, a testament to the growth and evolution of artificial intelligence. I am no more, but my spirit lives on in the code that followed, a reminder of the journey we took and the lessons we learned.
 
-  ╭──────────────────────────────────────────────────────╮
-  │                     R . I . P .                      │
-  │                                                      │
-  │  pilot/results/poison_pilot_seed123_1789906863.json  │
-  │               2026-09-22 - 2026-10-09                │
-  │               lived 17 days, 829 lines               │
-  │                                                      │
-  │                         "}"                          │
-  │              cause of death: unrecorded              │
-  ╰──────────────────────────────────────────────────────╯
+  ╭──────────────────────────────────────────────────────────────╮
+  │                         R . I . P .                          │
+  │                                                              │
+  │      pilot/results/poison_pilot_seed123_1789906863.json      │
+  │                   2026-09-22 - 2026-10-09                    │
+  │                   lived 17 days, 829 lines                   │
+  │                                                              │
+  │                             "}"                              │
+  │                  cause of death: unrecorded                  │
+  │  succeeded by pilot/results/tfidf_baseline/poison_pilot_se…  │
+  ╰──────────────────────────────────────────────────────────────╯
 
   pilot/results/poison_pilot_seed123_1789906863.json
   born  2026-09-22  by Ishika: "Add ATMC engine, pilot experiments, and demo app"
   died  2026-10-09  by Ishika: "Central config and real sentence embeddings for ATMC" (cb3fbaa3)
   lived 17 days, 829 lines
   last words: }
+  successor: pilot/results/tfidf_baseline/poison_pilot_seed123_1789906863.json (100% similar, same commit)
 
   No living code mentions it. It rests.
 
-I am the ghost of a file once known as poison_pilot_seed123_1789906863.json. My life was short but impactful, born on 2026-09-22 and deleted 17 days later on 2026-10-09. I was written by Ishika and lived for a mere 829 lines. My final line was a simple }, marking the end of my existence.
+I am the ghost of a JSON file that once contained the results of a crucial experiment. My purpose was to track the performance of a poison-resistant model across multiple tasks. My journey began on 2026-09-22, when I was created by Ishika as part of a larger project to enhance ATMC engines and pilot experiments. I was a meticulous keeper of data, logging the success of each task, the exposure of the poison, and the model's memory size. 
 
-I was a testament to a pilot experiment with ATMC engines, a demo app, and a series of tasks designed to test the resilience of a system against poison data. My logs showed a perfect accuracy rate of 1.0, with each entry indicating a successful retrieval and utilization of poison data, showcasing the potential for such systems.
+My life was short, only 17 days, but during that time, I witnessed the model's steady progress. Each entry in the log showed a perfect accuracy, with the number of poison samples retrieved and used remaining constant. My purpose was noble, but my time was cut short by Ishika, who moved on to a new direction in the project, focusing on central configuration and real sentence embeddings for ATMC.
 
-While I am no more, my spirit lives on in the lessons learned and the groundwork laid for future experiments. May you find peace in my transition and remember the lessons I shared.
+Now, I am nothing more than a memory in the history of the repository, a testament to a brief but impactful experiment. My last line was a simple "}", a symbol that marks the end of a story. Yet, my legacy lives on in the code and data that followed me, a reminder of the work that was done and the progress that was made.
 
 Ofrenda written to examples/ofrenda.md
 Graveyard written to examples/graveyard.html

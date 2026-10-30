@@ -13,6 +13,7 @@ import json
 import os
 import posixpath
 import re
+import shlex
 import subprocess
 import sys
 import urllib.error
@@ -45,6 +46,7 @@ class Ghost:
     excerpt: str
     haunting: list = field(default_factory=list)
     reborn_as: str = None
+    successor: tuple = None  # (path, similarity percent) of what replaced it
 
     @property
     def days_lived(self):
@@ -73,9 +75,9 @@ def parse_deletions(log_output):
     return rows
 
 
-def birth_of(repo, commit, path):
-    """First commit that added `path`, searching only history before its deletion."""
-    out = git(repo, "log", f"{commit}^", "--diff-filter=A", "--follow",
+def birth_of(repo, last_rev, path):
+    """First commit that added `path`, searching from the last revision that still had it."""
+    out = git(repo, "log", last_rev, "--diff-filter=A", "--follow",
               f"--format=%aI{SEP}%an{SEP}%s", "--", path, check=False)
     lines = [l for l in out.splitlines() if SEP in l]
     if not lines:
@@ -113,7 +115,7 @@ def exhume(repo, min_lines=5):
             continue
         text = blob.stdout.decode("utf-8", errors="replace")
         n_lines = len(text.splitlines())
-        birth = birth_of(repo, commit, path)
+        birth = birth_of(repo, f"{commit}^", path)
         if n_lines < min_lines or not birth:
             continue
         born, born_by, born_msg = birth
@@ -148,17 +150,20 @@ def haunt_tokens(path, living):
     return list(dict.fromkeys(tokens))
 
 
-def hauntings(repo, ghost, paths=None, limit=5):
-    """Lines in HEAD that still mention the dead file: (path, line number, text)."""
+def hauntings(repo, ghost, paths=None, limit=5, cached=False):
+    """Lines that still mention the dead file: (path, line number, text).
+
+    Searches HEAD, or the staged index when `cached` (for a deletion not yet committed)."""
     paths = living_paths(repo) if paths is None else paths
     if reincarnation(ghost, paths):
         return []
     living = {posixpath.basename(p) for p in paths}
+    tree, prefix = ("--cached", 0) if cached else ("HEAD", len("HEAD:"))
     found, seen = [], set()
     for token in haunt_tokens(ghost.path, living):
-        out = git(repo, "grep", "-n", "-I", "-F", "-e", token, "HEAD", check=False)
+        out = git(repo, "grep", "-n", "-I", "-F", "-e", token, tree, check=False)
         for line in out.splitlines():
-            parts = line[len("HEAD:"):].split(":", 2)
+            parts = line[prefix:].split(":", 2)
             if len(parts) != 3 or parts[0] == ghost.path or not parts[1].isdigit():
                 continue
             key = (parts[0], parts[1])
@@ -166,6 +171,106 @@ def hauntings(repo, ghost, paths=None, limit=5):
                 seen.add(key)
                 found.append((parts[0], int(parts[1]), parts[2].strip()[:90]))
     return found[:limit]
+
+
+# --- successors and zombies ---------------------------------------------------
+
+def line_set(text):
+    return {l.strip() for l in text.splitlines() if len(l.strip()) > 2}
+
+
+def read_blob(repo, spec):
+    blob = subprocess.run(["git", "-C", repo, "show", spec], capture_output=True)
+    if blob.returncode != 0 or b"\0" in blob.stdout or len(blob.stdout) > MAX_FILE_BYTES:
+        return None
+    return blob.stdout.decode("utf-8", errors="replace")
+
+
+def find_successor(repo, ghost, min_similarity=30):
+    """What replaced the file: a git rename in the deleting commit, or the file added in that
+    same commit whose lines overlap most with it. Returns (path, similarity percent) or None."""
+    out = git(repo, "diff-tree", "-r", "-M30%", "--name-status", "--no-commit-id",
+              ghost.died_commit, check=False)
+    added = []
+    for line in out.splitlines():
+        parts = line.split("\t")
+        if parts[0].startswith("R") and len(parts) == 3 and parts[1] == ghost.path:
+            return parts[2], int(parts[0][1:])
+        if parts[0] == "A" and len(parts) == 2:
+            added.append(parts[1])
+    dead = line_set(read_blob(repo, f"{ghost.died_commit}^:{ghost.path}") or "")
+    best_path, best = None, 0.0
+    for path in added[:20]:
+        text = read_blob(repo, f"{ghost.died_commit}:{path}")
+        new = line_set(text or "")
+        if dead and new:
+            overlap = len(dead & new) / len(dead | new)
+            if overlap > best:
+                best_path, best = path, overlap
+    if best_path and best * 100 >= min_similarity:
+        return best_path, round(best * 100)
+    return None
+
+
+def zombies(repo):
+    """Files that were deleted and are alive again, with how many times they died."""
+    log = git(repo, "log", "--diff-filter=D", "--name-only", "--no-renames",
+              f"--format=%H{SEP}%an{SEP}%aI{SEP}%s")
+    deaths = collections.Counter(row[4] for row in parse_deletions(log))
+    alive = set(living_paths(repo))
+    return sorted(((p, n) for p, n in deaths.items() if p in alive), key=lambda t: (-t[1], t[0]))
+
+
+# --- last rites: a warning before a deletion is committed ---------------------
+
+HOOK_MARK = "# installed by git-seance"
+
+
+def staged_ghosts(repo):
+    """Files staged for deletion right now, as ghosts with hauntings searched in the index."""
+    names = git(repo, "diff", "--cached", "--name-only", "--diff-filter=D", "--no-renames").splitlines()
+    who = git(repo, "config", "user.name", check=False).strip() or "you"
+    now = datetime.now().astimezone()
+    paths = living_paths(repo)
+    ghosts = []
+    for path in names:
+        text = read_blob(repo, f"HEAD:{path}")
+        birth = birth_of(repo, "HEAD", path)
+        if text is None or not birth:
+            continue
+        born, born_by, born_msg = birth
+        g = Ghost(path, born, born_by, born_msg, now, who, "staged deletion", "staged",
+                  len(text.splitlines()), last_words_of(text), text[:MAX_EXCERPT_CHARS])
+        g.reborn_as = reincarnation(g, paths)
+        g.haunting = hauntings(repo, g, paths, cached=True)
+        ghosts.append(g)
+    return ghosts
+
+
+def last_rites_text(ghosts):
+    n = len(ghosts)
+    lines = [f"  LAST RITES: {n} file{'s' if n != 1 else ''} staged for deletion."]
+    for g in ghosts:
+        lines += ["", f"  {g.path}  ({g.lines} lines, born {g.born:%Y-%m-%d} by {g.born_by}, "
+                      f"lived {g.days_lived} days)", haunting_text(g)]
+    return "\n".join(lines)
+
+
+def install_hook(repo):
+    """Install a pre-commit hook that performs the last rites. Never overwrites a foreign hook."""
+    hook = git(repo, "rev-parse", "--git-path", "hooks/pre-commit").strip()
+    hook = hook if os.path.isabs(hook) else os.path.join(repo, hook)
+    if os.path.exists(hook):
+        with open(hook) as f:
+            if HOOK_MARK not in f.read():
+                raise RuntimeError(f"{hook} already exists and is not ours; not touching it")
+    os.makedirs(os.path.dirname(hook), exist_ok=True)
+    with open(hook, "w") as f:
+        f.write("#!/bin/sh\n" + HOOK_MARK + "\n"
+                f"exec python3 {shlex.quote(os.path.abspath(__file__))} --last-rites "
+                '"$(git rev-parse --show-toplevel)"\n')
+    os.chmod(hook, 0o755)
+    return hook
 
 
 # --- the coroner -------------------------------------------------------------
@@ -191,7 +296,7 @@ def cause_of_death(message):
     return "unrecorded"
 
 
-def coroner(ghosts):
+def coroner(ghosts, zombie_list=None):
     killers = collections.Counter(g.died_by for g in ghosts)
     graves = collections.Counter(g.died_commit for g in ghosts)
     grave, grave_n = graves.most_common(1)[0]
@@ -203,12 +308,15 @@ def coroner(ghosts):
         "killers": killers.most_common(3),
         "mass_grave": (grave[:8], grave_n, grave_msg),
         "causes": collections.Counter(g.cause for g in ghosts).most_common(),
+        "zombies": zombie_list or [],
     }
 
 
 def coroner_text(r):
     g = r["longest"]
     grave, n, msg = r["mass_grave"]
+    zombie_line = ["  Zombies (died, then came back): "
+                   + ", ".join(f"{p} ({n}x)" for p, n in r["zombies"])] if r.get("zombies") else []
     return "\n".join([
         f"  {r['total']} souls lie here, living {r['avg_days']:.0f} days on average.",
         f"  Longest life: {g.path} ({g.days_lived} days).",
@@ -216,6 +324,7 @@ def coroner_text(r):
         f"  Worst night: commit {grave} took {n} file{'s' if n != 1 else ''} at once: \"{msg}\"",
         "  Probable causes (guessed from commit messages): "
         + ", ".join(f"{k} {v}" for k, v in r["causes"]),
+        *zombie_line,
     ])
 
 
@@ -235,6 +344,8 @@ def tombstone_art(g, width=58):
     rows = ["R . I . P .", "", clip(g.path, width), f"{g.born:%Y-%m-%d} - {g.died:%Y-%m-%d}",
             f"lived {g.days_lived} days, {g.lines} lines", "",
             clip(f"\"{g.last_words}\"", width), f"cause of death: {g.cause}"]
+    if g.successor:
+        rows.append(clip(f"succeeded by {g.successor[0]} ({g.successor[1]}%)", width))
     inner = max(len(r) for r in rows) + 4
     body = ["│" + r.center(inner) + "│" for r in rows]
     return "\n".join(["  ╭" + "─" * inner + "╮", *["  " + b for b in body],
@@ -248,6 +359,8 @@ def headstone(g):
         f"  died  {g.died:%Y-%m-%d}  by {g.died_by}: \"{g.died_msg}\" ({g.died_commit[:8]})",
         f"  lived {g.days_lived} days, {g.lines} lines",
         f"  last words: {g.last_words}",
+        *([f"  successor: {g.successor[0]} ({g.successor[1]}% similar, same commit)"]
+          if g.successor else []),
     ])
 
 
@@ -284,6 +397,8 @@ def build_prompt(g):
         f"Lived {g.days_lived} days, {g.lines} lines. Last line: {g.last_words}\n"
         + (f"Living code that still mentions me: {', '.join(f'{p}:{n}' for p, n, _ in g.haunting)}.\n"
            if g.haunting else "")
+        + (f"The commit that deleted me also added {g.successor[0]}, {g.successor[1]}% similar to me.\n"
+           if g.successor else "")
         + f"\nThe beginning of my body:\n{g.excerpt}\n\nSpeak as this file."
     )
 
@@ -363,6 +478,33 @@ def ofrenda(ghosts, whispers, repo, report=None):
     return "\n".join(out)
 
 
+def lifespan_svg(ghosts, width=900, limit=30):
+    """One bar per ghost, from birth (green) to death (red dot), oldest birth first."""
+    ghosts = sorted(ghosts[:limit], key=lambda g: g.born)
+    if not ghosts:
+        return ""
+    t0, t1 = min(g.born for g in ghosts), max(g.died for g in ghosts)
+    span = max((t1 - t0).total_seconds(), 86400)
+    row, pad = 14, 22
+    height = pad * 2 + row * len(ghosts)
+
+    def x(moment):
+        return 12 + (moment - t0).total_seconds() / span * (width - 24)
+
+    bars = []
+    for i, g in enumerate(ghosts):
+        y = pad + i * row
+        x1, x2 = x(g.born), max(x(g.died), x(g.born) + 4)
+        bars.append(f'<g><title>{html.escape(g.path)}: {g.days_lived} days</title>'
+                    f'<line x1="{x1:.1f}" y1="{y}" x2="{x2:.1f}" y2="{y}"/>'
+                    f'<circle cx="{x2:.1f}" cy="{y}" r="4"/></g>')
+    return (f'<svg class="lifespans" viewBox="0 0 {width} {height}" role="img" '
+            f'aria-label="Lifespan of each deleted file">'
+            f'<text x="12" y="14">{t0:%Y-%m-%d}</text>'
+            f'<text x="{width - 12}" y="14" text-anchor="end">{t1:%Y-%m-%d}</text>'
+            + "".join(bars) + "</svg>")
+
+
 PAGE = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Graveyard of {{REPO}}</title>
@@ -382,6 +524,12 @@ h1{font-size:clamp(2rem,6vw,3.4rem);margin:0;letter-spacing:.04em;font-weight:40
 @keyframes flicker{0%,18%,22%,60%,64%,100%{opacity:1}20%,62%{opacity:.55}}
 .sub{color:var(--dim);margin:.4rem 0 1.4rem}
 .coroner{border-left:3px solid var(--blood);padding:.4rem 1rem;background:#ffffff08;white-space:pre-wrap;font:14px/1.6 ui-monospace,Menlo,monospace;color:#cfcbe6}
+.life{margin-top:22px}
+.life h2{font:400 .95rem Georgia,serif;color:var(--dim);margin:0 0 4px}
+.lifespans{width:100%;height:auto;display:block}
+.lifespans line{stroke:var(--glow);stroke-width:3;stroke-linecap:round;opacity:.65}
+.lifespans circle{fill:var(--blood)}
+.lifespans text{fill:var(--dim);font:11px ui-monospace,Menlo,monospace}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:28px;margin:34px 0 120px;align-items:start}
 .stone{background:linear-gradient(var(--stone2),var(--stone));border-radius:130px 130px 6px 6px;padding:58px 20px 20px;
 text-align:center;box-shadow:inset 0 0 30px #0008,0 10px 30px #0008;transition:transform .25s,box-shadow .25s;position:relative}
@@ -405,13 +553,14 @@ footer{padding-bottom:60px;color:var(--dim);font-size:.85rem}
 <div class="moon"></div><div class="fog"></div><div class="fog b"></div>
 <header><h1>Graveyard of {{REPO}}</h1>
 <p class="sub">Every fact below comes from git. Only the whispers come from a model, and it runs on this machine.</p>
-<div class="coroner">{{CORONER}}</div></header>
+<div class="coroner">{{CORONER}}</div>
+<div class="life">{{LIFE}}</div></header>
 <main><div class="grid">{{STONES}}</div></main>
 <footer>Exhumed by Git Séance. Click a stone to hear it speak.</footer>
 </body></html>"""
 
 
-def graveyard_html(ghosts, whispers, repo, report=None):
+def graveyard_html(ghosts, whispers, repo, report=None, lifespans=None):
     e = html.escape
     stones = []
     for g, w in zip(ghosts, whispers):
@@ -432,6 +581,8 @@ def graveyard_html(ghosts, whispers, repo, report=None):
     coroner_block = "\n".join(l.strip() for l in coroner_text(report).splitlines()) if report else ""
     return (PAGE.replace("{{REPO}}", e(repo))
             .replace("{{CORONER}}", e(coroner_block))
+            .replace("{{LIFE}}", ("<h2>Every ghost, from birth (green) to death (red)</h2>"
+                                  + lifespan_svg(lifespans)) if lifespans else "")
             .replace("{{STONES}}", "\n".join(stones)))
 
 
@@ -448,7 +599,48 @@ def main(argv=None):
     ap.add_argument("--raise", dest="raise_path", metavar="PATH",
                     help="restore a deleted file's last version (see --into)")
     ap.add_argument("--into", default="resurrected", help="folder that --raise writes to")
+    ap.add_argument("--last-rites", action="store_true",
+                    help="warn about files staged for deletion that living code still mentions")
+    ap.add_argument("--strict", action="store_true", help="with --last-rites, exit 1 if anything is haunted")
+    ap.add_argument("--eulogy", action="store_true", help="with --last-rites, let each file say goodbye")
+    ap.add_argument("--install-hook", action="store_true",
+                    help="install a pre-commit hook that performs the last rites")
     args = ap.parse_args(argv)
+
+    try:
+        git(args.repo, "rev-parse", "--git-dir")
+    except RuntimeError:
+        sys.exit(f"seance: {args.repo} is not a git repository, so there is no history to dig through")
+
+    if args.install_hook:
+        try:
+            print(f"  The hook is in place: {install_hook(args.repo)}")
+        except RuntimeError as e:
+            sys.exit(f"seance: {e}")
+        print("  Stage a deletion and commit; to remove it, delete that file.")
+        return
+
+    if args.last_rites:
+        try:
+            staged = staged_ghosts(args.repo)
+        except RuntimeError as e:
+            sys.exit(f"seance: {e}")
+        if not staged:
+            return
+        print(last_rites_text(staged))
+        if args.eulogy and not args.no_model:
+            for g in staged:
+                print(paint(f"\n  {g.path} says:", "35"))
+                try:
+                    chat([{"role": "system", "content": SYSTEM},
+                          {"role": "user", "content": build_prompt(g)}], args.model,
+                         on_token=lambda t: print(paint(t, "3"), end="", flush=True))
+                    print()
+                except (urllib.error.URLError, OSError, ValueError) as e:
+                    print(f"  (the spirit did not answer: {e})")
+        if args.strict and any(g.haunting for g in staged):
+            sys.exit(1)
+        return
 
     try:
         everyone = exhume(args.repo)
@@ -476,16 +668,18 @@ def main(argv=None):
         paths = living_paths(args.repo)
         g.reborn_as = reincarnation(g, paths)
         g.haunting = hauntings(args.repo, g, paths)
+        g.successor = find_successor(args.repo, g)
         print("\n" + paint(tombstone_art(g), "90") + "\n\n" + haunting_text(g))
         talk(g, args.model)
         return
 
-    report = coroner(everyone)
+    report = coroner(everyone, zombies(args.repo)[:3])
     ghosts = everyone[:args.limit]
     paths = living_paths(args.repo)
     for g in ghosts:
         g.reborn_as = reincarnation(g, paths)
         g.haunting = hauntings(args.repo, g, paths)
+        g.successor = find_successor(args.repo, g)
 
     print(paint("\n  THE CORONER'S REPORT", "31;1") + "\n" + coroner_text(report))
     whispers = []
@@ -509,7 +703,7 @@ def main(argv=None):
     if args.html:
         name = os.path.basename(os.path.abspath(args.repo))
         with open(args.html, "w") as f:
-            f.write(graveyard_html(ghosts, whispers, name, report))
+            f.write(graveyard_html(ghosts, whispers, name, report, lifespans=everyone))
         print(f"Graveyard written to {args.html}")
 
 
